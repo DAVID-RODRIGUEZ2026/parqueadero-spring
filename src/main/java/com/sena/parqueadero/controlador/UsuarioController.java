@@ -2,7 +2,9 @@ package com.sena.parqueadero.controlador;
 
 import com.sena.parqueadero.modelo.Usuario;
 import com.sena.parqueadero.servicio.UsuarioService;
+import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
  * Recibe las peticiones HTTP (GET, POST, PUT, DELETE) y reemplaza
  * conceptualmente a los Servlets del proyecto anterior.
  * Ruta base: http://localhost:8080/usuarios
+ *
+ * Las peticiones POST y PUT validan los datos con @Valid; si algun
+ * dato no cumple las reglas, se responde 400 (Bad Request) con los
+ * mensajes de error (ver clase ManejadorErrores).
  *
  * @author Manuel David Rodriguez Garcia - SENA ficha 3336117
  */
@@ -61,18 +67,20 @@ public class UsuarioController {
     }
 
     /**
-     * POST /usuarios : registra un usuario nuevo.
+     * POST /usuarios : registra un usuario nuevo, validando sus datos.
      *
      * @param usuario datos del usuario recibidos en JSON
-     * @return el usuario guardado con su id
+     * @return el usuario guardado con su id (201 Created)
      */
     @PostMapping
-    public Usuario guardar(@RequestBody Usuario usuario) {
-        return usuarioService.guardar(usuario);
+    public ResponseEntity<Usuario> guardar(@Valid @RequestBody Usuario usuario) {
+        Usuario guardado = usuarioService.guardar(usuario);
+        return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
     /**
-     * PUT /usuarios/{id} : actualiza los datos de un usuario existente.
+     * PUT /usuarios/{id} : actualiza los datos de un usuario existente,
+     * validando los nuevos datos.
      *
      * @param id      identificador del usuario a actualizar
      * @param usuario nuevos datos del usuario en JSON
@@ -80,11 +88,13 @@ public class UsuarioController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> actualizar(@PathVariable Integer id,
-            @RequestBody Usuario usuario) {
+            @Valid @RequestBody Usuario usuario) {
         return usuarioService.buscarPorId(id)
                 .map(existente -> {
                     existente.setNombre(usuario.getNombre());
                     existente.setApellido(usuario.getApellido());
+                    existente.setDocumento(usuario.getDocumento());
+                    existente.setFechaNacimiento(usuario.getFechaNacimiento());
                     existente.setUsuario(usuario.getUsuario());
                     existente.setPassword(usuario.getPassword());
                     return ResponseEntity.ok(usuarioService.guardar(existente));
